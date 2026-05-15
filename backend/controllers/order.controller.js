@@ -7,10 +7,17 @@ const { generateInvoicePDF } = require('../utils/invoice');
 const { sendEmail } = require('../utils/email');
 const Razorpay = require('razorpay');
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// Lazy initialization — only created when payment route is actually called
+// This prevents crash at startup when RAZORPAY_KEY_ID env var is not set
+const getRazorpay = () => {
+  if (!process.env.RAZORPAY_KEY_ID) {
+    throw new Error('RAZORPAY_KEY_ID environment variable is not set. Please add it in Render → Environment.');
+  }
+  return new Razorpay({
+    key_id:    process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+  });
+};
 
 // ── PLACE ORDER ──────────────────────────────
 exports.placeOrder = async (req, res) => {
@@ -147,7 +154,7 @@ exports.placeOrder = async (req, res) => {
 exports.createRazorpayOrder = async (req, res) => {
   const { amount, orderId } = req.body;
 
-  const razorpayOrder = await razorpay.orders.create({
+  const razorpayOrder = await getRazorpay().orders.create({
     amount: Math.round(amount * 100), // paise
     currency: 'INR',
     receipt: orderId || `receipt_${Date.now()}`,
