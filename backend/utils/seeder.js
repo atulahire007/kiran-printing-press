@@ -300,7 +300,7 @@ const seedCoupons = async (adminId) => {
 };
 
 const seedTestimonials = async () => {
-  const { Testimonial } = require('./models/index');
+  // Testimonial already imported above
   await Testimonial.deleteMany({});
   await Testimonial.insertMany([
     { customerName: 'Rahul Patil', designation: 'Business Owner', company: 'Patil Enterprises', rating: 5, testimonial: 'Excellent quality and fast delivery. Best printing in Dharashiv!', isFeatured: true },

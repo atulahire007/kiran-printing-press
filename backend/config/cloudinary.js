@@ -2,11 +2,14 @@ const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+// Only configure if credentials are available
+if (process.env.CLOUDINARY_CLOUD_NAME) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key:    process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+}
 
 // Product image storage
 const productStorage = new CloudinaryStorage({
@@ -55,7 +58,7 @@ const galleryStorage = new CloudinaryStorage({
 // Multer upload instances
 exports.uploadProductImages = multer({
   storage: productStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) cb(null, true);
     else cb(new Error('Only image files are allowed'), false);
@@ -64,14 +67,14 @@ exports.uploadProductImages = multer({
 
 exports.uploadDesignFile = multer({
   storage: designStorage,
-  limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = [
       'image/jpeg', 'image/png', 'image/jpg',
       'application/pdf',
-      'application/postscript', // .ai
-      'image/vnd.adobe.photoshop', // .psd
-      'application/x-cdr', // .cdr
+      'application/postscript',
+      'image/vnd.adobe.photoshop',
+      'application/x-cdr',
     ];
     if (allowed.includes(file.mimetype) || file.originalname.match(/\.(ai|psd|cdr)$/i)) {
       cb(null, true);
@@ -101,7 +104,6 @@ exports.uploadGallery = multer({
 
 exports.cloudinary = cloudinary;
 
-// Delete file from Cloudinary
 exports.deleteFromCloudinary = async (publicId, resourceType = 'image') => {
   try {
     const result = await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
