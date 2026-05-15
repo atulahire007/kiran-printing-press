@@ -3,8 +3,16 @@ const logger = require('../utils/logger');
 
 const connectDB = async () => {
   try {
+    // Check required env var before attempting connection
+    if (!process.env.MONGO_URI) {
+      logger.error('FATAL: MONGO_URI environment variable is not set!');
+      logger.error('Please add MONGO_URI to your Render environment variables.');
+      logger.error('Get it from: MongoDB Atlas → Connect → Drivers → copy the connection string');
+      process.exit(1);
+    }
+
     const conn = await mongoose.connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 10000,
       maxPoolSize: 10,
     });
 
@@ -23,7 +31,11 @@ const connectDB = async () => {
     });
 
   } catch (error) {
-    logger.error(`MongoDB connection failed: ${error.message}`);
+    logger.error(`❌ MongoDB connection FAILED: ${error.message}`);
+    logger.error('Common causes:');
+    logger.error('  1. MONGO_URI env var is wrong or not set in Render');
+    logger.error('  2. MongoDB Atlas Network Access does not allow 0.0.0.0/0');
+    logger.error('  3. Wrong username/password in connection string');
     process.exit(1);
   }
 };

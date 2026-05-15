@@ -8,8 +8,6 @@ const orderItemSchema = new mongoose.Schema({
   quantity: { type: Number, required: true, min: 1 },
   unitPrice: { type: Number, required: true },
   totalPrice: { type: Number, required: true },
-
-  // Printing customization
   customization: {
     paperSize: String,
     paperWeight: String,
@@ -23,8 +21,6 @@ const orderItemSchema = new mongoose.Schema({
     }],
     specialInstructions: String,
   },
-
-  // Uploaded design file
   designFile: {
     public_id: String,
     url: String,
@@ -32,8 +28,6 @@ const orderItemSchema = new mongoose.Schema({
     fileType: String,
     uploadedAt: Date,
   },
-
-  // GST
   gstRate: { type: Number, default: 18 },
   gstAmount: { type: Number, default: 0 },
 }, { _id: true });
@@ -41,7 +35,7 @@ const orderItemSchema = new mongoose.Schema({
 const statusHistorySchema = new mongoose.Schema({
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'designing', 'printing', 'ready', 'shipped', 'delivered', 'cancelled', 'refunded'],
+    enum: ['pending','confirmed','designing','printing','ready','shipped','delivered','cancelled','refunded'],
     required: true,
   },
   message: String,
@@ -52,32 +46,19 @@ const statusHistorySchema = new mongoose.Schema({
 const orderSchema = new mongoose.Schema({
   orderNumber: {
     type: String,
-    unique: true,
+    unique: true,      // unique:true already creates index — NO schema.index() needed
     required: true,
   },
-
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-  },
-
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   items: [orderItemSchema],
 
-  // Address snapshot
   shippingAddress: {
-    name: String,
-    mobile: String,
-    addressLine1: String,
-    addressLine2: String,
-    city: String,
-    district: String,
-    state: String,
-    pincode: String,
-    landmark: String,
+    name: String, mobile: String,
+    addressLine1: String, addressLine2: String,
+    city: String, district: String,
+    state: String, pincode: String, landmark: String,
   },
 
-  // Pricing breakdown
   subtotal: { type: Number, required: true },
   discountAmount: { type: Number, default: 0 },
   couponCode: { type: String },
@@ -86,7 +67,6 @@ const orderSchema = new mongoose.Schema({
   gstTotal: { type: Number, default: 0 },
   totalAmount: { type: Number, required: true },
 
-  // Payment
   paymentMethod: {
     type: String,
     enum: ['razorpay', 'upi', 'cod', 'wallet'],
@@ -104,40 +84,32 @@ const orderSchema = new mongoose.Schema({
     paidAt: Date,
   },
 
-  // Order status
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'designing', 'printing', 'ready', 'shipped', 'delivered', 'cancelled', 'refunded'],
+    enum: ['pending','confirmed','designing','printing','ready','shipped','delivered','cancelled','refunded'],
     default: 'pending',
   },
 
-  // Status timeline
   statusHistory: [statusHistorySchema],
 
-  // Delivery
   trackingNumber: String,
   courierPartner: String,
   estimatedDelivery: Date,
   deliveredAt: Date,
 
-  // Notes
   customerNotes: String,
   adminNotes: String,
 
-  // Invoice
   invoiceNumber: String,
   invoiceGeneratedAt: Date,
 
-  // Cancellation
   cancelledAt: Date,
   cancellationReason: String,
   cancelledBy: { type: String, enum: ['user', 'admin'] },
 
-  // Loyalty points
   loyaltyPointsEarned: { type: Number, default: 0 },
   loyaltyPointsUsed: { type: Number, default: 0 },
 
-  // Source
   source: { type: String, enum: ['website', 'whatsapp', 'phone', 'walkin'], default: 'website' },
 
 }, {
@@ -146,9 +118,9 @@ const orderSchema = new mongoose.Schema({
   toObject: { virtuals: true },
 });
 
-// ── Indexes ────────────────────────────────
+// ── Only add indexes for fields WITHOUT unique:true ─────
+// orderNumber already has unique:true — skip it here
 orderSchema.index({ user: 1, createdAt: -1 });
-orderSchema.index({ orderNumber: 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ 'paymentDetails.razorpay_order_id': 1 });
 orderSchema.index({ createdAt: -1 });
@@ -158,9 +130,7 @@ orderSchema.pre('save', async function (next) {
   if (this.isNew) {
     const count = await mongoose.model('Order').countDocuments();
     const date = new Date();
-    this.orderNumber = `KPP-${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}-${String(count + 1).padStart(5, '0')}`;
-
-    // Initialize status history
+    this.orderNumber = `KPP-${date.getFullYear()}${String(date.getMonth()+1).padStart(2,'0')}${String(date.getDate()).padStart(2,'0')}-${String(count+1).padStart(5,'0')}`;
     this.statusHistory = [{
       status: 'pending',
       message: 'Order placed successfully',
@@ -170,7 +140,6 @@ orderSchema.pre('save', async function (next) {
   next();
 });
 
-// ── Methods ────────────────────────────────
 orderSchema.methods.updateStatus = async function (status, message, updatedBy) {
   this.status = status;
   this.statusHistory.push({ status, message, updatedBy, timestamp: new Date() });
@@ -179,7 +148,6 @@ orderSchema.methods.updateStatus = async function (status, message, updatedBy) {
   return await this.save();
 };
 
-// ── Virtuals ───────────────────────────────
 orderSchema.virtual('isDelivered').get(function () {
   return this.status === 'delivered';
 });

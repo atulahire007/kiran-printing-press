@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: [true, 'Email is required'],
-    unique: true,
+    unique: true,   // this already creates an index — do NOT add schema.index() for email
     lowercase: true,
     trim: true,
     match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,})+$/, 'Invalid email address'],
@@ -54,39 +54,30 @@ const userSchema = new mongoose.Schema({
   isVerified: { type: Boolean, default: false },
   isBlocked: { type: Boolean, default: false },
 
-  // OAuth
   googleId: { type: String, select: false },
   authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
 
-  // Addresses
   addresses: [addressSchema],
 
-  // OTP for mobile login
   otp: { type: String, select: false },
   otpExpiry: { type: Date, select: false },
 
-  // Email verification
   emailVerificationToken: { type: String, select: false },
   emailVerificationExpiry: { type: Date, select: false },
 
-  // Password reset
   resetPasswordToken: { type: String, select: false },
   resetPasswordExpiry: { type: Date, select: false },
 
-  // Loyalty & referral
   loyaltyPoints: { type: Number, default: 0 },
-  referralCode: { type: String, unique: true, sparse: true },
+  referralCode: { type: String, unique: true, sparse: true }, // unique:true already creates index
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
-  // Preferences
   preferredLanguage: { type: String, enum: ['en', 'hi', 'mr'], default: 'en' },
   newsletterSubscribed: { type: Boolean, default: true },
 
-  // Activity tracking
   lastLogin: { type: Date },
   loginCount: { type: Number, default: 0 },
 
-  // Wishlist (product IDs)
   wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
 
 }, {
@@ -95,16 +86,15 @@ const userSchema = new mongoose.Schema({
   toObject: { virtuals: true },
 });
 
-// ── Indexes ────────────────────────────────
-userSchema.index({ email: 1 });
-userSchema.index({ mobile: 1 });
-userSchema.index({ referralCode: 1 });
+// ── Index only fields that do NOT already have unique:true ─────
+userSchema.index({ mobile: 1 });   // mobile has no unique:true, so index here is fine
 
 // ── Pre-save: Hash password ────────────────
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  // Generate referral code
+  if (this.password) {
+    this.password = await bcrypt.hash(this.password, 12);
+  }
   if (!this.referralCode) {
     this.referralCode = `KPP${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
   }
@@ -127,25 +117,24 @@ userSchema.methods.generateJWT = function () {
 userSchema.methods.generatePasswordResetToken = function () {
   const resetToken = crypto.randomBytes(32).toString('hex');
   this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-  this.resetPasswordExpiry = Date.now() + 15 * 60 * 1000; // 15 minutes
+  this.resetPasswordExpiry = Date.now() + 15 * 60 * 1000;
   return resetToken;
 };
 
 userSchema.methods.generateEmailVerificationToken = function () {
   const token = crypto.randomBytes(32).toString('hex');
   this.emailVerificationToken = crypto.createHash('sha256').update(token).digest('hex');
-  this.emailVerificationExpiry = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  this.emailVerificationExpiry = Date.now() + 24 * 60 * 60 * 1000;
   return token;
 };
 
 userSchema.methods.generateOTP = function () {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   this.otp = otp;
-  this.otpExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+  this.otpExpiry = Date.now() + 10 * 60 * 1000;
   return otp;
 };
 
-// ── Virtuals ───────────────────────────────
 userSchema.virtual('fullAddress').get(function () {
   const def = this.addresses?.find(a => a.isDefault);
   return def ? `${def.addressLine1}, ${def.city}, ${def.state} - ${def.pincode}` : '';

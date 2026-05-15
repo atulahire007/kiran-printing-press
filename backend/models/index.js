@@ -8,10 +8,10 @@ const categorySchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true, unique: true },
   nameHi: { type: String, trim: true },
   nameMr: { type: String, trim: true },
-  slug: { type: String, unique: true, lowercase: true },
+  slug: { type: String, unique: true, lowercase: true }, // unique creates index already
   description: { type: String },
   image: { public_id: String, url: String },
-  icon: { type: String }, // Lucide/emoji icon name
+  icon: { type: String },
   parent: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', default: null },
   isActive: { type: Boolean, default: true },
   sortOrder: { type: Number, default: 0 },
@@ -26,9 +26,9 @@ categorySchema.pre('save', function (next) {
   }
   next();
 });
-categorySchema.index({ slug: 1 });
-categorySchema.virtual('products', { ref: 'Product', localField: '_id', foreignField: 'category' });
 
+// DO NOT add categorySchema.index({ slug:1 }) — already unique:true above
+categorySchema.virtual('products', { ref: 'Product', localField: '_id', foreignField: 'category' });
 const Category = mongoose.model('Category', categorySchema);
 
 // ══════════════════════════════════════════
@@ -64,20 +64,19 @@ cartSchema.virtual('subtotal').get(function () {
 cartSchema.virtual('itemCount').get(function () {
   return this.items.reduce((sum, item) => sum + item.quantity, 0);
 });
-
 const Cart = mongoose.model('Cart', cartSchema);
 
 // ══════════════════════════════════════════
 // COUPON MODEL
 // ══════════════════════════════════════════
 const couponSchema = new mongoose.Schema({
-  code: { type: String, required: true, unique: true, uppercase: true, trim: true },
+  code: { type: String, required: true, unique: true, uppercase: true, trim: true }, // unique creates index
   description: { type: String },
   discountType: { type: String, enum: ['percentage', 'flat'], required: true },
   discountValue: { type: Number, required: true, min: 0 },
-  maxDiscountAmount: { type: Number }, // Cap for percentage discounts
+  maxDiscountAmount: { type: Number },
   minOrderValue: { type: Number, default: 0 },
-  usageLimit: { type: Number, default: null }, // null = unlimited
+  usageLimit: { type: Number, default: null },
   usedCount: { type: Number, default: 0 },
   perUserLimit: { type: Number, default: 1 },
   applicableCategories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],
@@ -85,12 +84,12 @@ const couponSchema = new mongoose.Schema({
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
   isActive: { type: Boolean, default: true },
-  isFirstOrder: { type: Boolean, default: false }, // Only for first order
+  isFirstOrder: { type: Boolean, default: false },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   usedBy: [{ user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, usedAt: Date }],
 }, { timestamps: true });
 
-couponSchema.index({ code: 1 });
+// DO NOT add couponSchema.index({ code:1 }) — already unique:true above
 couponSchema.index({ isActive: 1, endDate: 1 });
 
 couponSchema.methods.isValid = function () {
@@ -105,7 +104,6 @@ couponSchema.methods.calculateDiscount = function (orderValue) {
   const discount = (orderValue * this.discountValue) / 100;
   return this.maxDiscountAmount ? Math.min(discount, this.maxDiscountAmount) : discount;
 };
-
 const Coupon = mongoose.model('Coupon', couponSchema);
 
 // ══════════════════════════════════════════
@@ -129,7 +127,6 @@ const reviewSchema = new mongoose.Schema({
 reviewSchema.index({ product: 1, user: 1 }, { unique: true });
 reviewSchema.index({ product: 1, isApproved: 1 });
 
-// Auto-update product rating on review save/delete
 reviewSchema.statics.updateProductRating = async function (productId) {
   const stats = await this.aggregate([
     { $match: { product: productId, isApproved: true } },
@@ -152,7 +149,6 @@ reviewSchema.post('save', async function () {
 reviewSchema.post('remove', async function () {
   await this.constructor.updateProductRating(this.product);
 });
-
 const Review = mongoose.model('Review', reviewSchema);
 
 // ══════════════════════════════════════════
@@ -165,7 +161,7 @@ const bannerSchema = new mongoose.Schema({
   subtitle: String,
   subtitleHi: String,
   subtitleMr: String,
-  image: { public_id: { type: String, required: true }, url: { type: String, required: true } },
+  image: { public_id: { type: String }, url: { type: String } },
   mobileImage: { public_id: String, url: String },
   link: { type: String },
   buttonText: { type: String, default: 'Shop Now' },
@@ -202,7 +198,6 @@ const contactSchema = new mongoose.Schema({
   repliedAt: Date,
   source: { type: String, enum: ['website', 'whatsapp', 'phone'], default: 'website' },
 }, { timestamps: true });
-
 const Contact = mongoose.model('Contact', contactSchema);
 
 // ══════════════════════════════════════════
@@ -221,7 +216,6 @@ const testimonialSchema = new mongoose.Schema({
   isFeatured: { type: Boolean, default: false },
   sortOrder: { type: Number, default: 0 },
 }, { timestamps: true });
-
 const Testimonial = mongoose.model('Testimonial', testimonialSchema);
 
 // ══════════════════════════════════════════
@@ -233,13 +227,12 @@ const designFileSchema = new mongoose.Schema({
   public_id: { type: String, required: true },
   url: { type: String, required: true },
   fileName: { type: String, required: true },
-  fileSize: Number, // bytes
+  fileSize: Number,
   fileType: String,
   mimeType: String,
   status: { type: String, enum: ['uploaded', 'under_review', 'approved', 'rejected'], default: 'uploaded' },
   adminFeedback: String,
 }, { timestamps: true });
-
 const DesignFile = mongoose.model('DesignFile', designFileSchema);
 
 // ══════════════════════════════════════════
@@ -254,7 +247,7 @@ const notificationSchema = new mongoose.Schema({
   },
   title: { type: String, required: true },
   message: { type: String, required: true },
-  data: { type: mongoose.Schema.Types.Mixed }, // Extra context (orderId, etc.)
+  data: { type: mongoose.Schema.Types.Mixed },
   isRead: { type: Boolean, default: false },
   readAt: Date,
   actionUrl: String,
@@ -263,4 +256,7 @@ const notificationSchema = new mongoose.Schema({
 notificationSchema.index({ user: 1, isRead: 1, createdAt: -1 });
 const Notification = mongoose.model('Notification', notificationSchema);
 
-module.exports = { Category, Cart, Coupon, Review, Banner, Contact, Testimonial, DesignFile, Notification };
+module.exports = {
+  Category, Cart, Coupon, Review, Banner,
+  Contact, Testimonial, DesignFile, Notification
+};
