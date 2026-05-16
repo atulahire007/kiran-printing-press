@@ -15,10 +15,10 @@ const MILESTONES = [
 ];
 
 const TEAM = [
-  { name: 'Kiran Patil', role: 'Founder & CEO', exp: '18+ years in printing', emoji: '👨‍💼' },
-  { name: 'Sunita Patil', role: 'Operations Manager', exp: '12+ years experience', emoji: '👩‍💼' },
-  { name: 'Rohit Deshmukh', role: 'Lead Designer', exp: '8+ years in graphic design', emoji: '👨‍🎨' },
-  { name: 'Priya More', role: 'Customer Relations', exp: '6+ years in customer service', emoji: '👩‍💻' },
+  { name: 'Kiran Phatkule', role: 'Founder & CEO', exp: '18+ years in printing', emoji: '👨‍💼' },
+  { name: 'Amit Phatkule', role: 'Operations Manager', exp: '12+ years experience', emoji: '👩‍💼' },
+  { name: 'Rutika Phatkule', role: 'Lead Designer', exp: '8+ years in graphic design', emoji: '👨‍🎨' },
+  { name: 'Nagesh Phatkule', role: 'Customer Relations', exp: '6+ years in customer service', emoji: '👩‍💻' },
 ];
 
 const INFRASTRUCTURE = [
