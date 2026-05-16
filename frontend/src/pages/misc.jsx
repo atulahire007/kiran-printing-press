@@ -1,18 +1,28 @@
 // ══════════════════════════════════════════
-// Register.jsx
+// misc.jsx — all imports at TOP (required by Vite/ESM)
+// Contains: Register, ForgotPassword, ResetPassword, OrderSuccess, NotFound
 // ══════════════════════════════════════════
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, User, Mail, Lock, Phone, Printer } from 'lucide-react';
+import {
+  Eye, EyeOff, User, Mail, Lock, Phone, Printer,
+  CheckCircle2, Package, ArrowRight
+} from 'lucide-react';
 import { registerUser } from '../redux/slices/authSlice';
+import { fetchOrderById } from '../redux/slices/orderSlice';
+import api from '../services/api';
+import toast from 'react-hot-toast';
 
+// ══════════════════════════════════════════
+// REGISTER
+// ══════════════════════════════════════════
 export function Register() {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { t } = useTranslation();
+  const dispatch   = useDispatch();
+  const navigate   = useNavigate();
+  const { t }      = useTranslation();
   const { loading } = useSelector((s) => s.auth);
   const [showPwd, setShowPwd] = useState(false);
   const { register, handleSubmit, watch, formState: { errors } } = useForm();
@@ -115,14 +125,10 @@ export function Register() {
     </div>
   );
 }
-export default Register;
 
 // ══════════════════════════════════════════
-// ForgotPassword.jsx
+// FORGOT PASSWORD
 // ══════════════════════════════════════════
-import api from '../services/api';
-import toast from 'react-hot-toast';
-
 export function ForgotPassword() {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
@@ -184,15 +190,13 @@ export function ForgotPassword() {
 }
 
 // ══════════════════════════════════════════
-// ResetPassword.jsx
+// RESET PASSWORD
 // ══════════════════════════════════════════
-import { useParams } from 'react-router-dom';
-
 export function ResetPassword() {
-  const { token } = useParams();
-  const navigate = useNavigate();
+  const { token }   = useParams();
+  const navigate    = useNavigate();
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading]   = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -228,17 +232,11 @@ export function ResetPassword() {
 }
 
 // ══════════════════════════════════════════
-// OrderSuccess.jsx
+// ORDER SUCCESS
 // ══════════════════════════════════════════
-import { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { CheckCircle2, Package, ArrowRight } from 'lucide-react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchOrderById } from '../redux/slices/orderSlice';
-
 export function OrderSuccess() {
-  const { id } = useParams();
-  const dispatch = useDispatch();
+  const { id }      = useParams();
+  const dispatch    = useDispatch();
   const { currentOrder: order } = useSelector((s) => s.orders);
 
   useEffect(() => { dispatch(fetchOrderById(id)); }, [id, dispatch]);
@@ -252,12 +250,16 @@ export function OrderSuccess() {
         <h1 className="text-3xl font-display font-bold mb-2">Order Placed! 🎉</h1>
         {order && (
           <>
-            <p className="text-gray-500 mb-1">Order Number: <span className="font-bold text-ink dark:text-white">{order.orderNumber}</span></p>
-            <p className="text-gray-500 mb-6">Total: <span className="font-bold text-primary">₹{order.totalAmount?.toLocaleString('en-IN')}</span></p>
+            <p className="text-gray-500 mb-1">
+              Order Number: <span className="font-bold text-ink dark:text-white">{order.orderNumber}</span>
+            </p>
+            <p className="text-gray-500 mb-6">
+              Total: <span className="font-bold text-primary">₹{order.totalAmount?.toLocaleString('en-IN')}</span>
+            </p>
           </>
         )}
         <p className="text-gray-500 text-sm mb-8 max-w-sm mx-auto">
-          Thank you for choosing Kiran Printing Press! We'll send you updates via email and WhatsApp.
+          Thank you for choosing Kiran Printing Press! We will send you updates via email and WhatsApp.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link to={`/dashboard/orders/${id}`} className="btn btn-primary gap-2">
@@ -273,14 +275,16 @@ export function OrderSuccess() {
 }
 
 // ══════════════════════════════════════════
-// NotFound.jsx
+// NOT FOUND
 // ══════════════════════════════════════════
 export function NotFound() {
   return (
     <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4">
       <div className="text-8xl font-display font-bold text-primary/20 mb-2">404</div>
       <h1 className="text-3xl font-display font-bold mb-3">Page Not Found</h1>
-      <p className="text-gray-500 mb-8 max-w-md">Oops! The page you're looking for doesn't exist or has been moved.</p>
+      <p className="text-gray-500 mb-8 max-w-md">
+        The page you are looking for does not exist or has been moved.
+      </p>
       <div className="flex gap-3">
         <Link to="/" className="btn btn-primary">Go Home</Link>
         <Link to="/products" className="btn btn-secondary">Browse Products</Link>
@@ -288,4 +292,5 @@ export function NotFound() {
     </div>
   );
 }
+
 export default NotFound;
